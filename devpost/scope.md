@@ -1,6 +1,6 @@
 ---
 doc: scope
-status: draft
+status: approved
 ---
 
 # Explainit
@@ -21,7 +21,7 @@ The developer makes or accepts a meaningful code change and saves the file. Expl
 
 ## Inspiration & Identity
 
-The identity is a friendly but interruptive coding coach: playful, slightly mischievous, and gamified rather than judgmental. The main spectacle is the avatar appearing inside VS Code immediately after a saved change. The exact avatar and humor style can be chosen during PRD.
+The identity is a friendly but interruptive retro video-game game-show host: playful, slightly mischievous, and gamified rather than judgmental. The main spectacle is the avatar and quiz experience appearing inside VS Code immediately after a saved change, with a deliberately distinct visual style that stands out against the IDE window.
 
 ## Why This Matters to the Learner
 
@@ -40,6 +40,7 @@ The proof of concept includes:
 - a manual `Explain This Change` command as a reliable fallback;
 - AI analysis of the current change and nearby file context;
 - three targeted comprehension questions, answer grading, and a playful result;
+- a Trust Receipt showing what context was inspected, why the questions were selected, and what to review next;
 - one-file or one-focused-change sessions suitable for a short live demo.
 
 ## Later
