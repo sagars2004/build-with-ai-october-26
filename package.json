@@ -7,6 +7,10 @@
     "compile": "npm run compile --workspace extension",
     "compile:service": "npm run compile --workspace service",
     "typecheck": "npm run typecheck --workspace extension && npm run typecheck --workspace service",
-    "dev:service": "npm run compile:service && npm run start --workspace service"
+    "dev:service": "npm run compile:service && npm run start --workspace service",
+    "package:extension": "npm run package --workspace extension"
+  },
+  "devDependencies": {
+    "@vscode/vsce": "^3.6.0"
   }
 }

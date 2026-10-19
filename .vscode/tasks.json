@@ -7,6 +7,19 @@
       "command": "npm run compile",
       "problemMatcher": ["$tsc"],
       "group": "build"
+    },
+    {
+      "label": "Start Explainit Service",
+      "type": "shell",
+      "command": "npm run dev:service",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Package Explainit VSIX",
+      "type": "shell",
+      "command": "npm run package:extension",
+      "problemMatcher": ["$tsc"]
     }
   ]
 }

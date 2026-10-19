@@ -8,4 +8,5 @@
 
 # Generated dependencies and extension build output.
 node_modules/
+*.vsix
 extension/out/

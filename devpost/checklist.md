@@ -66,7 +66,7 @@ Build mode: learn
 
 ## Final Review
 
-- [ ] Final review complete — feedback resolved and learner confirms ready to ship
+- [x] Final review complete — feedback resolved and learner confirms the normal-window workflow is ready to ship
 
 ## Code Tour and App Map
 
@@ -87,3 +87,4 @@ Activity mode: Focused alternative for an experienced plan-first builder.
 - Added root VS Code launch and task configuration after the first hands-on attempt showed that pressing `F5` did not launch the nested `extension/` package as an Extension Development Host. The extension manifest and compiled activation were correct; the missing launch target prevented the command from appearing. The launch target was then simplified to avoid reopening the normal workspace window.
 - Added a two-second service-request timeout after the hands-on check showed that an unavailable or stalled local service could make the command appear unresponsive. The extension now falls back to the fixture quiz instead of waiting indefinitely.
 - Open the fixture quiz immediately before the asynchronous context request after a second hands-on check showed that even a fallback timeout gave no immediate visual response. MCP context now enhances the already-visible panel when it returns.
+- Added a local VSIX packaging path and normal-window setup instructions after final review showed that the Extension Development Host was useful for debugging but unnecessarily split the demo across windows. The VSIX workflow keeps F5 for development while letting the installed extension run beside a target project in a regular VS Code window.
