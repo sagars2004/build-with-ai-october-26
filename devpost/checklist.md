@@ -70,15 +70,15 @@ Build mode: learn
 
 ## Code Tour and App Map
 
-- [ ] Learning activity complete — connect the MCP/agent boundary to a real quiz session and verification evidence
-- [ ] Optional edit and transfer reflection addressed — offer one safe edit or a brief transfer reflection after the tour
-- [ ] `devpost/app-map.html` generated from finished code, checked, and shown, including a project-grounded practice to reuse
+- [x] Learning activity complete — focused alternative traced the real Copilot-save failure through `extension/src/extension.ts`, the bounded context request in `service/src/server.ts`, and the agent prompt in `service/src/agent.ts`; the corrected latest-edit signal was verified in the live flow.
+- [x] Optional edit and transfer reflection addressed — no additional code edit was needed after the verified slice; one transfer reflection is offered in the wrap-up.
+- [x] `devpost/app-map.html` generated from finished code, checked, and shown, including a project-grounded practice to reuse.
 
-Activity and evidence: [to complete after the build; expected route is extension command → local service → MCP tool → model adapter → webview result]
-Route and stops: [to complete from actual source symbols after implementation]
-Edit outcome: [to complete]
-Reflection: [to complete]
-Activity mode: [to complete]
+Activity and evidence: Focused alternative; traced and repaired the stale-Git-diff issue using a real Copilot save and verified the resulting quiz subject.
+Route and stops: `extension/src/extension.ts` → `service/src/server.ts` → `service/src/mcp/client.ts` / MCP tools → `service/src/agent.ts` → `extension/src/quiz-panel.ts`.
+Edit outcome: No optional code edit retained; the meaningful slice fixes were implemented, compiled, tested, and committed.
+Reflection: One optional transfer question offered in the final wrap-up.
+Activity mode: Focused alternative for an experienced plan-first builder.
 
 ## Revisions
 

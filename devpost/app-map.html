@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Explainit App Map</title>
+  <style>
+    :root { color-scheme: dark; --bg: #0e0c1b; --panel: #18152d; --panel-2: #221d40; --ink: #f8f7ff; --muted: #b5b1c9; --gold: #ffca58; --pink: #ff6fbe; --border: #514878; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: radial-gradient(circle at top right, #34265f, var(--bg) 58%); color: var(--ink); font: 16px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    main { max-width: 980px; margin: 0 auto; padding: 40px 24px 64px; }
+    h1 { margin-bottom: 8px; color: var(--gold); }
+    h2 { margin-top: 32px; color: var(--pink); font-size: 18px; }
+    p, li { color: var(--muted); }
+    code { color: var(--gold); }
+    .card { background: rgba(24, 21, 45, .94); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin: 16px 0; }
+    .diagram { overflow-x: auto; }
+    svg { display: block; min-width: 760px; width: 100%; height: auto; }
+    .node { fill: var(--panel-2); stroke: var(--border); stroke-width: 2; }
+    .label { fill: var(--ink); font: 14px ui-monospace, monospace; }
+    .arrow { stroke: var(--gold); stroke-width: 2; marker-end: url(#arrow); }
+    .route { display: grid; gap: 12px; padding-left: 24px; }
+    .route li::marker { color: var(--gold); }
+    .meta { font-size: 13px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Explainit // App Map</h1>
+    <p class="meta">Offline reference snapshot at commit <code>c192bd6</code>. This map describes the verified vibe-coding session flow.</p>
+
+    <section class="card">
+      <h2>What Explainit does</h2>
+      <p>Explainit watches saved workspace edits, uses a bounded local MCP context server plus an agent skill to understand the newest edit, and opens a retro comprehension quiz. A developer can also route a prompt to <code>@explainit</code> for short host commentary.</p>
+    </section>
+
+    <section class="card diagram" aria-label="Explainit flow diagram">
+      <svg viewBox="0 0 940 210" role="img" aria-labelledby="flow-title flow-desc">
+        <title id="flow-title">Explainit request flow</title>
+        <desc id="flow-desc">A saved edit or Explainit chat prompt moves through the VS Code extension, local service, MCP context client, model adapter, and retro quiz or chat response.</desc>
+        <defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#ffca58" /></marker></defs>
+        <rect class="node" x="16" y="72" width="150" height="64" rx="10" /><text class="label" x="91" y="99" text-anchor="middle">VS Code</text><text class="label" x="91" y="120" text-anchor="middle">save / @explainit</text>
+        <rect class="node" x="205" y="72" width="150" height="64" rx="10" /><text class="label" x="280" y="99" text-anchor="middle">extension.ts</text><text class="label" x="280" y="120" text-anchor="middle">latest edit signal</text>
+        <rect class="node" x="394" y="72" width="150" height="64" rx="10" /><text class="label" x="469" y="99" text-anchor="middle">service.ts</text><text class="label" x="469" y="120" text-anchor="middle">/quiz or /observe</text>
+        <rect class="node" x="583" y="20" width="150" height="64" rx="10" /><text class="label" x="658" y="47" text-anchor="middle">MCP client</text><text class="label" x="658" y="68" text-anchor="middle">bounded context</text>
+        <rect class="node" x="583" y="126" width="150" height="64" rx="10" /><text class="label" x="658" y="153" text-anchor="middle">agent.ts</text><text class="label" x="658" y="174" text-anchor="middle">quiz / host reply</text>
+        <rect class="node" x="772" y="72" width="150" height="64" rx="10" /><text class="label" x="847" y="99" text-anchor="middle">visible result</text><text class="label" x="847" y="120" text-anchor="middle">panel or chat</text>
+        <line class="arrow" x1="166" y1="104" x2="205" y2="104" /><line class="arrow" x1="355" y1="104" x2="394" y2="104" /><line class="arrow" x1="544" y1="90" x2="583" y2="58" /><line class="arrow" x1="544" y1="118" x2="583" y2="158" /><line class="arrow" x1="733" y1="104" x2="772" y2="104" />
+      </svg>
+    </section>
+
+    <section class="card">
+      <h2>Reference route: saved edit to quiz</h2>
+      <ol class="route">
+        <li><code>extension/src/extension.ts</code> — <code>onDidSaveTextDocument</code> debounces the saved document and carries the newest insertion/deletion summary.</li>
+        <li><code>service/src/server.ts</code> — <code>contextFromRequest</code> asks the MCP client for the focused Git context, then <code>POST /quiz</code> calls the agent.</li>
+        <li><code>service/src/agent.ts</code> → <code>extension/src/quiz-panel.ts</code> — the agent returns four mixed questions; the webview renders answers, feedback, score, and the Trust Receipt.</li>
+      </ol>
+    </section>
+
+    <section class="card">
+      <h2>To change this, start here</h2>
+      <ul>
+        <li>Change automatic trigger timing or cooldown in <code>extension/src/extension.ts</code>.</li>
+        <li>Change question personality, difficulty, or format rules in <code>service/src/agent.ts</code> and <code>.agents/skills/explainit-host/SKILL.md</code>.</li>
+        <li>Change grading, loading, feedback, or receipt presentation in <code>extension/src/quiz-panel.ts</code>.</li>
+        <li>Change the bounded workspace boundary in <code>service/src/mcp/server.ts</code> and <code>service/src/workspace/git.ts</code>.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>A practice to reuse</h2>
+      <p>When an older Git diff caused vague questions, the implementation added an observable latest-edit signal from the editor and then verified it through a real Copilot save. For future agent-built features, define the newest event you want to explain, pass it through a narrow contract, and test that event—not just the accumulated repository state.</p>
+    </section>
+
+    <section class="card">
+      <h2>Run it again</h2>
+      <p>From the repository root, run <code>npm run dev:service</code>, press <code>F5</code> to launch the Extension Development Host, open a Git-tracked file, and save a meaningful edit. Use <code>@explainit</code> in VS Code Chat for prompt-level host commentary.</p>
+    </section>
+  </main>
+</body>
+</html>
