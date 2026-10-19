@@ -86,10 +86,27 @@ export class QuizPanel {
   }
 
   private freeFormLooksCorrect(answer: string, expected: string): boolean {
-    const expectedTerms = expected.toLowerCase().match(/[a-z0-9]{4,}/g) ?? [];
-    const answerText = answer.toLowerCase();
-    const usefulTerms = [...new Set(expectedTerms)].slice(0, 8);
-    return usefulTerms.length > 0 && usefulTerms.filter((term) => answerText.includes(term)).length >= Math.max(1, Math.ceil(usefulTerms.length * 0.35));
+    const stopWords = new Set([
+      "about", "answer", "because", "could", "explain", "happens", "must", "should", "that", "the", "this", "what",
+      "when", "with", "would", "your", "mentions", "mention", "include", "includes", "including",
+    ]);
+    const aliases: Record<string, string> = {
+      malformed: "syntax-error", invalid: "syntax-error", broken: "syntax-error", bad: "syntax-error",
+      jsx: "jsx", markup: "jsx", tree: "jsx", tag: "jsx", tags: "jsx",
+      omitted: "missing", omit: "missing", missing: "missing", unclosed: "missing", absent: "missing",
+      compilation: "compile-error", compiler: "compile-error", compile: "compile-error", build: "compile-error", transpile: "compile-error",
+      runtime: "runtime-error", run: "runtime-error", crash: "runtime-error", crashes: "runtime-error", error: "runtime-error", errors: "runtime-error", failure: "runtime-error", fails: "runtime-error", fail: "runtime-error",
+    };
+    const tokens = (value: string) => value.toLowerCase().match(/[a-z0-9-]{3,}/g) ?? [];
+    const canonicalize = (value: string) => {
+      const stem = value.replace(/(ing|ed|es|s)$/, "");
+      return aliases[value] ?? aliases[stem] ?? stem;
+    };
+    const expectedTerms = [...new Set(tokens(expected).filter((term) => !stopWords.has(term)).map(canonicalize))];
+    const answerTerms = new Set(tokens(answer).filter((term) => !stopWords.has(term)).map(canonicalize));
+    if (!expectedTerms.length || !answerTerms.size) return false;
+    const matched = expectedTerms.filter((term) => answerTerms.has(term)).length;
+    return matched >= Math.max(1, Math.ceil(expectedTerms.length * 0.3));
   }
 
   private render(quiz: FixtureQuiz): string {
@@ -157,6 +174,8 @@ export class QuizPanel {
       .feedback { display: none; margin-top: 18px; border-left: 4px solid var(--green); }
       .feedback.wrong { border-left-color: var(--pink); }
       .feedback strong { color: var(--accent); }
+      .next-action { display: flex; justify-content: center; min-height: 0; }
+      .next-action .lock { margin-top: 14px; }
       .receipt { display: none; margin-top: 18px; color: var(--muted); font-size: 12px; line-height: 1.6; }
       .receipt strong { color: var(--ink); }
     </style>
@@ -172,6 +191,7 @@ export class QuizPanel {
       <div class="progress"><span>QUESTION ${questionNumber} OF ${totalQuestions}</span><span>HOST READY</span></div>
       <section class="message"><strong>${escapeHtml(current.question)}</strong><div class="options">${answerControl}</div></section>
       <section id="feedback" class="message feedback"></section>
+      <div id="nextAction" class="next-action"></div>
       <section id="receipt" class="receipt"><strong>TRUST RECEIPT // ${quiz.source === "agent" ? "LIVE EVIDENCE" : "FIXTURE PREVIEW"}</strong><br />${escapeHtml(quiz.contextSummary ?? "The live agent will later show which workspace context it inspected and why it chose each question.")}<br />${quiz.toolsUsed ? escapeHtml(`MCP TOOLS // ${quiz.toolsUsed.join(", ")}`) : ""}</section>
     </main>
     <script>
@@ -204,7 +224,7 @@ export class QuizPanel {
           next.className = 'lock';
           next.textContent = 'NEXT QUESTION';
           next.addEventListener('click', () => vscode.postMessage({ type: 'nextQuestion' }));
-          feedback.appendChild(next);
+          document.getElementById('nextAction').appendChild(next);
         }
       });
     </script>
