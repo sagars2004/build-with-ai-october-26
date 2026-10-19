@@ -50,6 +50,7 @@ export class QuizPanel {
         const current = this.currentQuestion();
         if (!current) return;
         const answer = message.answer ?? message.optionId ?? "";
+        const isUncertain = current.answerType === "free_form" && this.isUncertainAnswer(answer);
         const isCorrect = current.answerType === "single_choice"
           ? answer === current.correctOptionId
           : this.freeFormLooksCorrect(answer, current.correctAnswer);
@@ -59,7 +60,9 @@ export class QuizPanel {
         void this.panel?.webview.postMessage({
           type: "answerFeedback",
           isCorrect,
-          feedback: isCorrect
+          feedback: isUncertain
+            ? "The honesty buzzer is loud today. No points for this round, but now you know exactly which part of the code deserves a closer look."
+            : isCorrect
             ? current.feedback
             : `Not quite. ${current.feedback}`,
           isFinal,
@@ -70,6 +73,10 @@ export class QuizPanel {
     );
 
     this.panel.webview.html = this.render(quiz);
+  }
+
+  private isUncertainAnswer(answer: string): boolean {
+    return /^(?:i\s+)?(?:don['’]?t\s+know|dont\s+know|do\s+not\s+know|not\s+sure|no\s+idea|unsure|idk)\.?$/i.test(answer.trim());
   }
 
   private currentQuestion() {

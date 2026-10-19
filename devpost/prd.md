@@ -109,7 +109,7 @@ Source: learner decision during the PRD interview; `scope.md > Explicitly Cut`.
 - **Saved-change trigger plus chat-aware entry point** — Explainit watches meaningful saved changes and also provides an `@explainit` chat participant for prompts the developer intentionally routes to it. VS Code does not expose another extension's private transcript for passive interception, so Explainit will not pretend to hear unrelated chats it cannot access.
 - **Game-show host** — this was chosen as the most exciting personality direction.
 - **One question at a time with immediate feedback** — it makes the quiz feel interactive and teaches the user while they play.
-- **Mixed answer formats** — free-form and selectable responses can be used where each best tests understanding.
+- **Mixed answer formats** — every four-question quiz uses either 2 selectable plus 2 free-form questions or 3 selectable plus 1 free-form question, so the session tests recognition and explanation.
 - **Agent-governed behavior** — the host should decide useful questions, formats, and responses from the change context rather than behaving as a fixed script.
 - **Polite skip without extra context requests** — the workspace already provides the intended context, and the user should not have to explain it again.
 - **Retro video-game visual language** — the product should stand out clearly against the IDE window while remaining polished, readable, and restrained rather than visually chaotic.

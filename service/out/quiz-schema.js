@@ -14,6 +14,11 @@ exports.agentQuizSchema = zod_1.z.object({
     skipReason: zod_1.z.string(),
     title: zod_1.z.string(),
     intro: zod_1.z.string(),
-    questions: zod_1.z.array(exports.agentQuestionSchema).length(4),
+    questions: zod_1.z.array(exports.agentQuestionSchema).length(4).superRefine((questions, ctx) => {
+        const freeFormCount = questions.filter((question) => question.answerType === "free_form").length;
+        if (freeFormCount !== 1 && freeFormCount !== 2) {
+            ctx.addIssue({ code: zod_1.z.ZodIssueCode.custom, message: "Use exactly 1 or 2 free-form questions, with the rest single-choice." });
+        }
+    }),
 });
 //# sourceMappingURL=quiz-schema.js.map

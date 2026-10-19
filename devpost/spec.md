@@ -28,7 +28,7 @@ PRD ref: `prd.md > The Core Journey`.
 3. The extension sends a quiz-start request to the local service containing the workspace root, active file path, language, and optional changed-region metadata. It does not send credentials, unrelated files, or a full repository scan.
 4. The service starts or reuses the local MCP server for the session. The model receives the agent skill, the allowed MCP tool descriptions, and the initial change metadata.
 5. If more context is needed, the model selects a read-only MCP tool. The service calls the MCP server, receives the bounded code context, and continues the model turn.
-6. The model returns a strict quiz contract containing the host introduction, exactly four questions, answer formats, grading rubrics, edge-case explanations, and Trust Receipt evidence.
+6. The model returns a strict quiz contract containing the host introduction, exactly four questions, a validated 2/2 or 3/1 mix of answer formats, grading rubrics, edge-case explanations, and Trust Receipt evidence.
 7. The service stores that quiz in memory and returns the first question to the extension. The extension renders the retro host interface.
 8. The developer answers. The extension sends only the current question identifier, rubric reference, and answer to the service. The service makes a small grading request and returns concise feedback plus a score contribution.
 9. After the final answer, the service calculates the session result and returns the final score, review areas, and Trust Receipt. The extension renders the reveal and keeps it visible until the user closes the surface.

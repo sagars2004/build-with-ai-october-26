@@ -13,7 +13,12 @@ export const agentQuizSchema = z.object({
   skipReason: z.string(),
   title: z.string(),
   intro: z.string(),
-  questions: z.array(agentQuestionSchema).length(4),
+  questions: z.array(agentQuestionSchema).length(4).superRefine((questions, ctx) => {
+    const freeFormCount = questions.filter((question) => question.answerType === "free_form").length;
+    if (freeFormCount !== 1 && freeFormCount !== 2) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Use exactly 1 or 2 free-form questions, with the rest single-choice." });
+    }
+  }),
 });
 
 export type AgentQuiz = z.infer<typeof agentQuizSchema>;

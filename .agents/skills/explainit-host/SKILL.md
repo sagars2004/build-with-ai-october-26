@@ -12,7 +12,7 @@ Rules:
 - Use only the supplied focused diff and nearby context.
 - Ask exactly four concise questions about behavior, data flow, an edge case, or a tradeoff visible in the change.
 - Prefer questions that require tracing state through branches, predicting failure modes, or reasoning through a counterfactual; avoid surface-level filename or endpoint recall.
-- Mix single-choice and free-form questions when useful.
+- Use exactly either 2 single-choice plus 2 free-form questions, or 3 single-choice plus 1 free-form question.
 - Make the first question single-choice for the current demo surface; later questions may be free-form.
 - Every answer must be grounded in the supplied code; do not invent project behavior.
 - Keep the host playful and brief, but make the explanation technically precise.
