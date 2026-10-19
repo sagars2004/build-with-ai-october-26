@@ -2,9 +2,11 @@
   "name": "explainit",
   "private": true,
   "version": "0.1.0",
-  "workspaces": ["extension"],
+  "workspaces": ["extension", "service"],
   "scripts": {
     "compile": "npm run compile --workspace extension",
-    "typecheck": "npm run typecheck --workspace extension"
+    "compile:service": "npm run compile --workspace service",
+    "typecheck": "npm run typecheck --workspace extension && npm run typecheck --workspace service",
+    "dev:service": "npm run compile:service && npm run start --workspace service"
   }
 }

@@ -126,11 +126,11 @@ class QuizPanel {
         <div><div class="eyebrow">Explainit // fixture mode</div><h1>${quiz.title}</h1></div>
       </header>
       <section class="intro">${quiz.intro}</section>
-      <div class="change">FOCUSED CHANGE // ${quiz.changeLabel}</div>
+      <div class="change">FOCUSED CHANGE // ${quiz.changeLabel}<br />${quiz.contextSummary ?? ""}</div>
       <div class="progress"><span>QUESTION ${quiz.questionNumber} OF ${quiz.totalQuestions}</span><span>HOST READY</span></div>
       <section class="message"><strong>${quiz.question}</strong><div class="options">${options}</div></section>
       <section id="feedback" class="message feedback"></section>
-      <section id="receipt" class="receipt"><strong>TRUST RECEIPT // FIXTURE PREVIEW</strong><br />The live agent will later show which workspace context it inspected and why it chose each question.</section>
+      <section id="receipt" class="receipt"><strong>TRUST RECEIPT // FIXTURE PREVIEW</strong><br />${quiz.contextSummary ?? "The live agent will later show which workspace context it inspected and why it chose each question."}<br />${quiz.toolsUsed ? `MCP TOOLS // ${quiz.toolsUsed.join(", ")}` : ""}</section>
     </main>
     <script>
       const vscode = acquireVsCodeApi();

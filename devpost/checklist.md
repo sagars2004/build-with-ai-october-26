@@ -19,7 +19,7 @@ Build mode: learn
   Learner check: Open the Extension Development Host, run the command, play the fixture question, and report whether the retro host surface feels distinct from VS Code and whether the interaction is understandable.
   Commit: `Add playable Explainit extension shell`
 
-- [ ] **2. Explainit can inspect one focused code change through MCP**
+- [x] **2. Explainit can inspect one focused code change through MCP**
   Becomes usable: The local service and read-only MCP server start visibly, expose bounded workspace tools, and return the active file’s focused Git diff and nearby context for a manual quiz request.
   Why now: MCP is the main unfamiliar technical risk and the core differentiator; proving the tool boundary early prevents building a quiz experience that cannot access the intended context.
   PRD ref: `prd.md > Change-triggered quiz`, `prd.md > Agent-governed host`, `prd.md > Graceful skip`
@@ -61,7 +61,7 @@ Build mode: learn
 
 ## Hands-on Checkpoints
 
-- [ ] Early usable behavior explored — after slice 2, inspect the retro quiz shell plus the visible MCP context logs and give feedback before the live model integration.
+- [x] Early usable behavior explored — after slice 2, inspect the retro quiz shell plus the visible MCP context logs and give feedback before the live model integration.
 - [ ] Final kick-the-tires exploration and feedback completed — after slice 5, run the complete manual and automatic flows, try no-diff/service-unavailable cases, and report refinements.
 
 ## Final Review
@@ -83,3 +83,5 @@ Activity mode: [to complete]
 ## Revisions
 
 - Added root VS Code launch and task configuration after the first hands-on attempt showed that pressing `F5` did not launch the nested `extension/` package as an Extension Development Host. The extension manifest and compiled activation were correct; the missing launch target prevented the command from appearing. The launch target was then simplified to avoid reopening the normal workspace window.
+- Added a two-second service-request timeout after the hands-on check showed that an unavailable or stalled local service could make the command appear unresponsive. The extension now falls back to the fixture quiz instead of waiting indefinitely.
+- Open the fixture quiz immediately before the asynchronous context request after a second hands-on check showed that even a fallback timeout gave no immediate visual response. MCP context now enhances the already-visible panel when it returns.

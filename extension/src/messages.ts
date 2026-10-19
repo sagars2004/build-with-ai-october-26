@@ -14,4 +14,6 @@ export type FixtureQuiz = {
   options: AnswerOption[];
   correctOptionId: string;
   feedback: string;
+  contextSummary?: string;
+  toolsUsed?: string[];
 };
