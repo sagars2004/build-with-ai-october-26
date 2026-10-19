@@ -8,13 +8,17 @@
     "vscode": "^1.90.0"
   },
   "categories": ["Other"],
-  "activationEvents": ["onCommand:explainit.explainThisChange"],
+  "activationEvents": ["onCommand:explainit.explainThisChange", "onCommand:explainit.explainThisChangeLive"],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
         "command": "explainit.explainThisChange",
         "title": "Explain This Change"
+      },
+      {
+        "command": "explainit.explainThisChangeLive",
+        "title": "Explain This Change — MCP Agent"
       }
     ]
   },

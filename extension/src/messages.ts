@@ -10,10 +10,11 @@ export type FixtureQuiz = {
   questionNumber: number;
   totalQuestions: number;
   question: string;
-  answerType: "single_choice";
+  answerType: "single_choice" | "free_form";
   options: AnswerOption[];
   correctOptionId: string;
   feedback: string;
   contextSummary?: string;
   toolsUsed?: string[];
+  source?: "fixture" | "agent" | "loading";
 };

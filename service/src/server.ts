@@ -1,6 +1,8 @@
 import * as http from "node:http";
 import { ContextClient } from "./mcp/client";
 import { ContextRequest, FocusedContext } from "./types";
+import { generateAgentQuiz } from "./agent";
+import { providerConfig } from "./config";
 
 const port = Number(process.env.EXPLAINIT_PORT ?? 4242);
 const contextClient = new ContextClient();
@@ -66,12 +68,29 @@ const server = http.createServer(async (request, response) => {
     return;
   }
 
+  if (request.method === "POST" && request.url === "/quiz") {
+    try {
+      const input = (await readJson(request)) as ContextRequest;
+      const context = await contextFromRequest(input);
+      const quiz = await generateAgentQuiz(context);
+      console.log(`[agent] generated ${quiz.questions.length} question(s) for ${context.filePath}`);
+      send(response, 200, { ok: true, context, quiz, provider: providerConfig().provider, model: providerConfig().model });
+    } catch (error) {
+      const message = String(error);
+      console.error(`[agent] fallback: ${message}`);
+      send(response, 503, { ok: false, message });
+    }
+    return;
+  }
+
   send(response, 404, { ok: false, message: "Not found" });
 });
 
 server.listen(port, "127.0.0.1", () => {
   console.log(`[service] Explainit listening on http://127.0.0.1:${port}`);
   console.log("[service] POST /context to inspect one focused file through MCP");
+  const config = providerConfig();
+  console.log(`[service] agent provider: ${config.provider} · model: ${config.model} · key: ${config.apiKey ? "configured" : "missing"}`);
 });
 
 async function shutdown(): Promise<void> {

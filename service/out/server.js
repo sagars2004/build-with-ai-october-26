@@ -35,6 +35,8 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 const http = __importStar(require("node:http"));
 const client_1 = require("./mcp/client");
+const agent_1 = require("./agent");
+const config_1 = require("./config");
 const port = Number(process.env.EXPLAINIT_PORT ?? 4242);
 const contextClient = new client_1.ContextClient();
 function readJson(request) {
@@ -92,11 +94,28 @@ const server = http.createServer(async (request, response) => {
         }
         return;
     }
+    if (request.method === "POST" && request.url === "/quiz") {
+        try {
+            const input = (await readJson(request));
+            const context = await contextFromRequest(input);
+            const quiz = await (0, agent_1.generateAgentQuiz)(context);
+            console.log(`[agent] generated ${quiz.questions.length} question(s) for ${context.filePath}`);
+            send(response, 200, { ok: true, context, quiz, provider: (0, config_1.providerConfig)().provider, model: (0, config_1.providerConfig)().model });
+        }
+        catch (error) {
+            const message = String(error);
+            console.error(`[agent] fallback: ${message}`);
+            send(response, 503, { ok: false, message });
+        }
+        return;
+    }
     send(response, 404, { ok: false, message: "Not found" });
 });
 server.listen(port, "127.0.0.1", () => {
     console.log(`[service] Explainit listening on http://127.0.0.1:${port}`);
     console.log("[service] POST /context to inspect one focused file through MCP");
+    const config = (0, config_1.providerConfig)();
+    console.log(`[service] agent provider: ${config.provider} · model: ${config.model} · key: ${config.apiKey ? "configured" : "missing"}`);
 });
 async function shutdown() {
     await contextClient.close();

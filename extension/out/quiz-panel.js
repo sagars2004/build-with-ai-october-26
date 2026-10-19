@@ -42,9 +42,14 @@ class QuizPanel {
         this.extensionUri = extensionUri;
     }
     show(quiz) {
+        if (this.panel && quiz.source === "agent") {
+            const previousPanel = this.panel;
+            this.panel = undefined;
+            previousPanel.dispose();
+        }
         if (this.panel) {
-            this.panel.reveal(vscode.ViewColumn.Beside);
             this.panel.webview.html = this.render(quiz);
+            this.panel.reveal(vscode.ViewColumn.Beside);
             return;
         }
         this.panel = vscode.window.createWebviewPanel("explainitQuiz", "Explainit", vscode.ViewColumn.Beside, { enableScripts: true });
@@ -123,7 +128,7 @@ class QuizPanel {
     <main class="shell">
       <header class="topline">
         <img class="avatar" src="${avatarUri}" alt="Explainit host avatar" />
-        <div><div class="eyebrow">Explainit // fixture mode</div><h1>${quiz.title}</h1></div>
+        <div><div class="eyebrow">Explainit // ${quiz.source === "agent" ? "agent mode" : quiz.source === "loading" ? "agent connecting..." : "fixture mode"}</div><h1>${quiz.title}</h1></div>
       </header>
       <section class="intro">${quiz.intro}</section>
       <div class="change">FOCUSED CHANGE // ${quiz.changeLabel}<br />${quiz.contextSummary ?? ""}</div>

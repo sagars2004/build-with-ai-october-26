@@ -56,7 +56,12 @@ async function readNearbyContext(workspaceRoot, filePath) {
     if (!(0, safety_1.isSafeWorkspacePath)(workspaceRoot, filePath)) {
         throw new Error("The selected file is outside the workspace or is blocked as sensitive.");
     }
-    const { stdout } = await execFileAsync("git", ["-C", workspaceRoot, "show", `HEAD:${path.relative(workspaceRoot, filePath)}`], { maxBuffer: 2_000_000 });
-    return (0, safety_1.clampText)(stdout, 8000);
+    try {
+        const { stdout } = await execFileAsync("git", ["-C", workspaceRoot, "show", `HEAD:${path.relative(workspaceRoot, filePath)}`], { maxBuffer: 2_000_000 });
+        return (0, safety_1.clampText)(stdout, 8000);
+    }
+    catch {
+        return "No committed baseline is available for this file; use the focused diff only.";
+    }
 }
 //# sourceMappingURL=git.js.map

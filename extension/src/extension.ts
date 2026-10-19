@@ -44,28 +44,83 @@ function requestContext(workspaceRoot: string, filePath: string, language: strin
   });
 }
 
+function requestAgentQuiz(workspaceRoot: string, filePath: string, language: string): Promise<{ filePath: string; diff: string; toolsUsed: string[]; quiz: { title: string; intro: string; questions: Array<{ question: string; answerType: "single_choice" | "free_form"; options: string[]; correctAnswer: string; explanation: string }> } }> {
+  return new Promise((resolve, reject) => {
+    const body = JSON.stringify({ workspaceRoot, filePath, language });
+    const deadline = setTimeout(() => {
+      request.destroy(new Error("Explainit agent exceeded the 60-second response limit; opening fixture mode."));
+    }, 60000);
+    const request = http.request({ hostname: "127.0.0.1", port: 4242, path: "/quiz", method: "POST", headers: { "content-type": "application/json", "content-length": Buffer.byteLength(body) } }, (response) => {
+      let responseBody = "";
+      response.setEncoding("utf8");
+      response.on("data", (chunk) => { responseBody += chunk; });
+      response.on("aborted", () => reject(new Error("Explainit service aborted the quiz response.")));
+      response.on("end", () => {
+        clearTimeout(deadline);
+        if (response.statusCode !== 200) {
+          let detail = responseBody || "no error details";
+          try {
+            const payload = JSON.parse(responseBody) as { message?: string };
+            if (payload.message) detail = payload.message;
+          } catch {
+            // Keep the raw body when the service did not return JSON.
+          }
+          return reject(new Error(`Explainit service returned ${response.statusCode}: ${detail}`));
+        }
+        try {
+          resolve(JSON.parse(responseBody));
+        } catch {
+          reject(new Error("Explainit service returned invalid JSON."));
+        }
+      });
+    });
+    request.on("error", (error) => { clearTimeout(deadline); reject(error); });
+    request.setTimeout(60000, () => request.destroy(new Error("Explainit agent timed out; opening fixture mode.")));
+    request.end(body);
+  });
+}
+
 export function activate(context: vscode.ExtensionContext): void {
   const panel = new QuizPanel(context.extensionUri);
-  const command = vscode.commands.registerCommand(
-    "explainit.explainThisChange",
-    async () => {
+  const explainThisChange = async () => {
       // Open immediately so a slow or unavailable local service never makes the command feel inert.
-      panel.show(fixtureQuiz);
+      panel.show({ ...fixtureQuiz, source: "loading", intro: "The host is checking the MCP context before the buzzer sounds..." });
       const editor = vscode.window.activeTextEditor;
-      const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+      const workspaceRoot = editor
+        ? vscode.workspace.getWorkspaceFolder(editor.document.uri)?.uri.fsPath
+        : undefined;
       if (editor && workspaceRoot) {
         try {
-          const context = await requestContext(workspaceRoot, editor.document.uri.fsPath, editor.document.languageId);
-          panel.show({ ...fixtureQuiz, changeLabel: context.filePath, contextSummary: `${context.diff.split("\n")[0]} …`, toolsUsed: context.toolsUsed });
+          const result = await requestAgentQuiz(workspaceRoot, editor.document.uri.fsPath, editor.document.languageId);
+          console.log(`[explainit] live agent quiz received from ${editor.document.uri.fsPath}`);
+          const question = result.quiz.questions[0];
+          panel.show({
+            ...fixtureQuiz,
+            title: result.quiz.title,
+            intro: result.quiz.intro,
+            changeLabel: result.filePath,
+            question: question.question,
+            answerType: question.answerType,
+            options: question.options.map((label, index) => ({ id: String(index), label: `${String.fromCharCode(65 + index)}. ${label}` })),
+            correctOptionId: question.answerType === "single_choice" ? String(question.options.indexOf(question.correctAnswer)) : "",
+            feedback: question.explanation,
+            contextSummary: `${result.diff.split("\n")[0]} …`,
+            toolsUsed: result.toolsUsed,
+            source: "agent",
+          });
           return;
         } catch (error) {
-          console.warn(`[explainit] using fixture quiz: ${String(error)}`);
+          const reason = String(error);
+          console.warn(`[explainit] using fixture quiz: ${reason}`);
+          panel.show({ ...fixtureQuiz, source: "fixture", intro: `The live host stepped away for a moment. Fixture mode is ready. (${reason})` });
+          void vscode.window.showWarningMessage(`Explainit used fixture mode: ${reason}`);
         }
       }
-    },
-  );
+  };
+  const command = vscode.commands.registerCommand("explainit.explainThisChange", explainThisChange);
+  const liveCommand = vscode.commands.registerCommand("explainit.explainThisChangeLive", explainThisChange);
 
-  context.subscriptions.push(command);
+  context.subscriptions.push(command, liveCommand);
 }
 
 export function deactivate(): void {}
