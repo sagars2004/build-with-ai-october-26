@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run Explainit Extension",
+      "type": "extensionHost",
+      "request": "launch",
+      "runtimeExecutable": "${execPath}",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}/extension"
+      ],
+      "preLaunchTask": "Compile Explainit",
+      "outFiles": ["${workspaceFolder}/extension/out/**/*.js"]
+    }
+  ]
+}

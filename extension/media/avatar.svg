@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Retro game show host">
+  <rect width="64" height="64" rx="12" fill="#ff6fbe"/>
+  <rect x="8" y="8" width="48" height="48" rx="8" fill="#221d40" stroke="#ffca58" stroke-width="3"/>
+  <rect x="17" y="22" width="9" height="9" fill="#f8f7ff"/>
+  <rect x="38" y="22" width="9" height="9" fill="#f8f7ff"/>
+  <rect x="22" y="40" width="20" height="5" fill="#74e0a1"/>
+  <rect x="11" y="14" width="8" height="4" fill="#ffca58"/>
+  <rect x="45" y="14" width="8" height="4" fill="#ffca58"/>
+</svg>

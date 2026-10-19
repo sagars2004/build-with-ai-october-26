@@ -1,0 +1,30 @@
+{
+  "name": "explainit-extension",
+  "displayName": "Explainit",
+  "description": "A playful code comprehension quiz for AI-assisted development.",
+  "version": "0.1.0",
+  "publisher": "explainit",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": ["onCommand:explainit.explainThisChange"],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "explainit.explainThisChange",
+        "title": "Explain This Change"
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p ./tsconfig.json",
+    "typecheck": "tsc -p ./tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/vscode": "^1.90.0",
+    "typescript": "^5.6.0"
+  }
+}
