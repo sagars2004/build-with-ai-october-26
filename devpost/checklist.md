@@ -9,7 +9,7 @@ Build mode: learn
 
 ## Slices
 
-- [ ] **1. Explainit opens a playable retro quiz surface from VS Code**
+- [x] **1. Explainit opens a playable retro quiz surface from VS Code**
   Becomes usable: The extension launches in an Extension Development Host, the `Explain This Change` command opens the retro game-show webview, and a clearly labeled fixture quiz can be played through one question and feedback.
   Why now: Bootstraps the project while proving the visible kernel early—the avatar-led interruption and quiz experience exist before hidden integrations are added.
   PRD ref: `prd.md > The Core Journey`, `prd.md > Screens and Layout`, `prd.md > Look and Feel`
