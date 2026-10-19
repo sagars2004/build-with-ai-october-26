@@ -5,3 +5,7 @@
 .env
 .env.*
 !.env.example
+
+# Generated dependencies and extension build output.
+node_modules/
+extension/out/
