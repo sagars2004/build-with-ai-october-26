@@ -76,42 +76,46 @@ function requestContext(workspaceRoot, filePath, language) {
     });
 }
 function requestAgentQuiz(workspaceRoot, filePath, language) {
-    return new Promise((resolve, reject) => {
-        const body = JSON.stringify({ workspaceRoot, filePath, language });
-        const deadline = setTimeout(() => {
-            request.destroy(new Error("Explainit agent exceeded the 60-second response limit; opening fixture mode."));
-        }, 60000);
-        const request = http.request({ hostname: "127.0.0.1", port: 4242, path: "/quiz", method: "POST", headers: { "content-type": "application/json", "content-length": Buffer.byteLength(body) } }, (response) => {
-            let responseBody = "";
-            response.setEncoding("utf8");
-            response.on("data", (chunk) => { responseBody += chunk; });
-            response.on("aborted", () => reject(new Error("Explainit service aborted the quiz response.")));
-            response.on("end", () => {
-                clearTimeout(deadline);
-                if (response.statusCode !== 200) {
-                    let detail = responseBody || "no error details";
-                    try {
-                        const payload = JSON.parse(responseBody);
-                        if (payload.message)
-                            detail = payload.message;
-                    }
-                    catch {
-                        // Keep the raw body when the service did not return JSON.
-                    }
-                    return reject(new Error(`Explainit service returned ${response.statusCode}: ${detail}`));
-                }
+    return (async () => {
+        const controller = new AbortController();
+        const deadline = setTimeout(() => controller.abort(), 60000);
+        try {
+            const response = await fetch("http://127.0.0.1:4242/quiz", {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ workspaceRoot, filePath, language }),
+                signal: controller.signal,
+            });
+            const responseBody = await response.text();
+            if (!response.ok) {
+                let detail = responseBody || "no error details";
                 try {
-                    resolve(JSON.parse(responseBody));
+                    const payload = JSON.parse(responseBody);
+                    if (payload.message)
+                        detail = payload.message;
                 }
                 catch {
-                    reject(new Error("Explainit service returned invalid JSON."));
+                    // Keep the raw body when the service did not return JSON.
                 }
-            });
-        });
-        request.on("error", (error) => { clearTimeout(deadline); reject(error); });
-        request.setTimeout(60000, () => request.destroy(new Error("Explainit agent timed out; opening fixture mode.")));
-        request.end(body);
-    });
+                throw new Error(`Explainit service returned ${response.status}: ${detail}`);
+            }
+            try {
+                const payload = JSON.parse(responseBody);
+                return { ...payload.context, quiz: payload.quiz };
+            }
+            catch {
+                throw new Error(`Explainit service returned invalid JSON (${responseBody.slice(0, 120)})`);
+            }
+        }
+        catch (error) {
+            if (error instanceof Error && error.name === "AbortError")
+                throw new Error("Explainit agent exceeded the 60-second response limit; opening fixture mode.");
+            throw error;
+        }
+        finally {
+            clearTimeout(deadline);
+        }
+    })();
 }
 function activate(context) {
     const panel = new quiz_panel_1.QuizPanel(context.extensionUri);

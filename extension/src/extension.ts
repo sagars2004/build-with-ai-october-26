@@ -45,39 +45,43 @@ function requestContext(workspaceRoot: string, filePath: string, language: strin
 }
 
 function requestAgentQuiz(workspaceRoot: string, filePath: string, language: string): Promise<{ filePath: string; diff: string; toolsUsed: string[]; quiz: { title: string; intro: string; questions: Array<{ question: string; answerType: "single_choice" | "free_form"; options: string[]; correctAnswer: string; explanation: string }> } }> {
-  return new Promise((resolve, reject) => {
-    const body = JSON.stringify({ workspaceRoot, filePath, language });
-    const deadline = setTimeout(() => {
-      request.destroy(new Error("Explainit agent exceeded the 60-second response limit; opening fixture mode."));
-    }, 60000);
-    const request = http.request({ hostname: "127.0.0.1", port: 4242, path: "/quiz", method: "POST", headers: { "content-type": "application/json", "content-length": Buffer.byteLength(body) } }, (response) => {
-      let responseBody = "";
-      response.setEncoding("utf8");
-      response.on("data", (chunk) => { responseBody += chunk; });
-      response.on("aborted", () => reject(new Error("Explainit service aborted the quiz response.")));
-      response.on("end", () => {
-        clearTimeout(deadline);
-        if (response.statusCode !== 200) {
-          let detail = responseBody || "no error details";
-          try {
-            const payload = JSON.parse(responseBody) as { message?: string };
-            if (payload.message) detail = payload.message;
-          } catch {
-            // Keep the raw body when the service did not return JSON.
-          }
-          return reject(new Error(`Explainit service returned ${response.statusCode}: ${detail}`));
-        }
-        try {
-          resolve(JSON.parse(responseBody));
-        } catch {
-          reject(new Error("Explainit service returned invalid JSON."));
-        }
+  return (async () => {
+    const controller = new AbortController();
+    const deadline = setTimeout(() => controller.abort(), 60000);
+    try {
+      const response = await fetch("http://127.0.0.1:4242/quiz", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ workspaceRoot, filePath, language }),
+        signal: controller.signal,
       });
-    });
-    request.on("error", (error) => { clearTimeout(deadline); reject(error); });
-    request.setTimeout(60000, () => request.destroy(new Error("Explainit agent timed out; opening fixture mode.")));
-    request.end(body);
-  });
+      const responseBody = await response.text();
+      if (!response.ok) {
+        let detail = responseBody || "no error details";
+        try {
+          const payload = JSON.parse(responseBody) as { message?: string };
+          if (payload.message) detail = payload.message;
+        } catch {
+          // Keep the raw body when the service did not return JSON.
+        }
+        throw new Error(`Explainit service returned ${response.status}: ${detail}`);
+      }
+      try {
+        const payload = JSON.parse(responseBody) as {
+          context: { filePath: string; diff: string; toolsUsed: string[] };
+          quiz: { title: string; intro: string; questions: Array<{ question: string; answerType: "single_choice" | "free_form"; options: string[]; correctAnswer: string; explanation: string }> };
+        };
+        return { ...payload.context, quiz: payload.quiz };
+      } catch {
+        throw new Error(`Explainit service returned invalid JSON (${responseBody.slice(0, 120)})`);
+      }
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") throw new Error("Explainit agent exceeded the 60-second response limit; opening fixture mode.");
+      throw error;
+    } finally {
+      clearTimeout(deadline);
+    }
+  })();
 }
 
 export function activate(context: vscode.ExtensionContext): void {
