@@ -59,7 +59,7 @@ Source: `scope.md > The Core Loop`, `scope.md > The POC Boundary`.
 Source: `scope.md > The Unique Kernel`, `scope.md > Why This Matters to the Learner`.
 
 - The host uses the available code-change and nearby workspace context to decide what is worth testing.
-- The host chooses a small number of questions, capped at three for the proof of concept.
+- The host chooses a small number of questions, capped at four for the proof of concept.
 - The host can choose between free-form explanation and selectable answers based on which format better tests the concept.
 - The host adapts its wording, follow-up, and feedback to the specific change rather than displaying a fixed generic quiz.
 - The host maintains the game-show personality while remaining playful rather than judgmental.
@@ -95,7 +95,7 @@ Source: learner decision during the PRD interview; `scope.md > Explicitly Cut`.
 ## States and Boundaries
 
 - **First use:** The user invokes the command or makes the first meaningful saved change; Explainit opens the host surface with the game-show introduction and the first question.
-- **Normal quiz:** The host asks no more than three questions, accepts the selected response format, gives feedback after each answer, and advances through the short session.
+- **Normal quiz:** The host asks no more than four questions, accepts the selected response format, gives feedback after each answer, and advances through the short session.
 - **No meaningful change:** The host politely explains that there is not enough of a focused change to quiz and lets the user return to coding.
 - **Quiz unavailable:** If the change cannot produce a useful quiz, the host gives a brief, friendly skip message rather than requesting extra setup.
 - **Incorrect or incomplete answer:** The host explains the relevant reasoning without shaming the user, records the result for the final score, and continues to the next question.
@@ -106,7 +106,7 @@ Source: learner decision during the PRD interview; `scope.md > Explicitly Cut`.
 ## Product Decisions
 
 - **VS Code first** — the in-editor experience is the main spectacle and preserves workspace context.
-- **Saved-change trigger plus manual command** — automatic prompt interception is not universal, while the manual command makes the demo reliable.
+- **Saved-change trigger plus chat-aware entry point** — Explainit watches meaningful saved changes and also provides an `@explainit` chat participant for prompts the developer intentionally routes to it. VS Code does not expose another extension's private transcript for passive interception, so Explainit will not pretend to hear unrelated chats it cannot access.
 - **Game-show host** — this was chosen as the most exciting personality direction.
 - **One question at a time with immediate feedback** — it makes the quiz feel interactive and teaches the user while they play.
 - **Mixed answer formats** — free-form and selectable responses can be used where each best tests understanding.
@@ -121,7 +121,7 @@ The POC is complete when a developer can:
 
 - trigger Explainit from a meaningful saved code change or the manual command;
 - see the avatar-led game-show introduction and a concise change context;
-- answer up to three agent-generated questions in a mix of response formats;
+- answer up to four agent-generated questions in a mix of response formats;
 - receive brief correctness explanations after each answer;
 - see a final score and clear indication of what they understand or should investigate; and
 - see a Trust Receipt that explains the context inspected, the reason for the questions, and the next review areas; and

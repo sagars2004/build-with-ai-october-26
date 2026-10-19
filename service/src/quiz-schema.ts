@@ -13,7 +13,7 @@ export const agentQuizSchema = z.object({
   skipReason: z.string(),
   title: z.string(),
   intro: z.string(),
-  questions: z.array(agentQuestionSchema).min(1).max(3),
+  questions: z.array(agentQuestionSchema).length(4),
 });
 
 export type AgentQuiz = z.infer<typeof agentQuizSchema>;

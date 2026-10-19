@@ -7,11 +7,13 @@ status: approved
 
 ## How This Works, In Plain Language
 
-Explainit has three local pieces:
+Explainit has three local pieces, plus two VS Code entry points:
 
 1. A VS Code extension notices a focused file change and displays the retro game-show quiz surface inside VS Code.
 2. A local Explainit service coordinates one quiz session. It keeps the current quiz in memory, talks to the model, and sends results back to the extension.
 3. A small read-only MCP server gives the agent a controlled way to inspect the focused change and nearby code. The agent can request only the workspace context it needs instead of receiving the whole project.
+
+The extension also exposes an `@explainit` Chat Participant for prompts the developer explicitly sends to Explainit. A saved-change watcher remains the automatic path after meaningful edits. Explainit cannot passively read another extension's private chat transcript through the public VS Code API, so the demo uses explicit routing for prompt commentary and automatic observation for saved code changes.
 
 The local service starts the MCP server as a child process and acts as the MCP client. It exposes the MCP tools to the model as callable tool definitions, forwards any model-selected tool call to the MCP server, and gives the returned context back to the model. Once the model has enough context, it returns a structured quiz object rather than loose prose. The extension renders that object and sends each answer back for grading.
 
@@ -26,7 +28,7 @@ PRD ref: `prd.md > The Core Journey`.
 3. The extension sends a quiz-start request to the local service containing the workspace root, active file path, language, and optional changed-region metadata. It does not send credentials, unrelated files, or a full repository scan.
 4. The service starts or reuses the local MCP server for the session. The model receives the agent skill, the allowed MCP tool descriptions, and the initial change metadata.
 5. If more context is needed, the model selects a read-only MCP tool. The service calls the MCP server, receives the bounded code context, and continues the model turn.
-6. The model returns a strict quiz contract containing the host introduction, up to three questions, answer formats, grading rubrics, edge-case explanations, and Trust Receipt evidence.
+6. The model returns a strict quiz contract containing the host introduction, exactly four questions, answer formats, grading rubrics, edge-case explanations, and Trust Receipt evidence.
 7. The service stores that quiz in memory and returns the first question to the extension. The extension renders the retro host interface.
 8. The developer answers. The extension sends only the current question identifier, rubric reference, and answer to the service. The service makes a small grading request and returns concise feedback plus a score contribution.
 9. After the final answer, the service calculates the session result and returns the final score, review areas, and Trust Receipt. The extension renders the reveal and keeps it visible until the user closes the surface.

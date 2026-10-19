@@ -14,6 +14,6 @@ exports.agentQuizSchema = zod_1.z.object({
     skipReason: zod_1.z.string(),
     title: zod_1.z.string(),
     intro: zod_1.z.string(),
-    questions: zod_1.z.array(exports.agentQuestionSchema).min(1).max(3),
+    questions: zod_1.z.array(exports.agentQuestionSchema).length(4),
 });
 //# sourceMappingURL=quiz-schema.js.map

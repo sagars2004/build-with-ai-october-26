@@ -30,12 +30,12 @@ Build mode: learn
   Commit: `Add bounded MCP workspace context`
 
 - [x] **3. The agent generates a real short quiz from the focused change**
-  Becomes usable: With a local API key configured, Explainit uses the agent skill and MCP context to generate up to three structured questions with mixed answer formats, while the fixture fallback remains available when the model is unavailable.
+  Becomes usable: With a local API key configured, Explainit uses the agent skill and MCP context to generate up to four structured questions with mixed answer formats, while the fixture fallback remains available when the model is unavailable.
   Why now: This connects the proven UI and MCP boundary to the AI kernel and tests the most important external dependency before adding the full scoring flow.
   PRD ref: `prd.md > Agent-governed host`, `prd.md > States and Boundaries`, `prd.md > Graceful skip`
   Spec ref: `spec.md > Explainit Agent Skill`, `spec.md > Model Adapter`, `spec.md > External Services and Dependencies > OpenAI Responses API`, `spec.md > Important Failure Modes`
   Build: Add the versioned agent skill, structured quiz schemas, OpenAI Responses API adapter, MCP tool bridge, configurable model/key environment variables, four-call session budget, validation, one repair attempt, visible request/error logs, and clearly labeled fixture fallback.
-  Verify (mechanical): Run typecheck and the service integration smoke test with a fixture response; with live configuration available, make one focused change and confirm a valid structured quiz is returned with no more than three questions; simulate missing-key or invalid-output handling and confirm the graceful fallback/skip.
+  Verify (mechanical): Run typecheck and the service integration smoke test with a fixture response; with live configuration available, make one focused change and confirm a valid structured quiz is returned with no more than four questions; simulate missing-key or invalid-output handling and confirm the graceful fallback/skip.
   Learner check: Run one live quiz if API access is available, compare the questions with the code change, and report whether the agent tested something genuinely specific rather than producing a generic code explanation.
   Commit: `Generate agent-guided quizzes`
 
@@ -49,14 +49,14 @@ Build mode: learn
   Learner check: Play the complete quiz against a focused change, inspect the final score and Trust Receipt, and report whether the receipt makes the agent’s behavior understandable without opening source code.
   Commit: `Complete quiz scoring and trust receipt`
 
-- [ ] **5. Saved-change triggering and demo polish work end to end**
-  Becomes usable: A debounced save of a non-empty active-file Git diff can start the same quiz, repeated minor edits do not create an uncontrolled stream, and the local demo path is ready to record.
+- [ ] **5. Explainit follows a vibe-coding session without becoming noisy**
+  Becomes usable: A debounced save of a non-empty active-file Git diff can start the quiz, while an `@explainit` chat participant can respond to an intentional prompt with a short host comment or a quiz when the prompt describes a meaningful change. Repeated minor edits do not create an uncontrolled stream, and the local demo path is ready to record.
   Why now: Adds the automatic spectacle only after the manual path, MCP context, live agent, and result experience are reliable; it keeps trigger noise from obscuring earlier failures.
   PRD ref: `prd.md > Change-triggered quiz`, `prd.md > Repeated trigger`, `prd.md > Look and Feel`, `prd.md > What We're Building`
   Spec ref: `spec.md > Change Detector`, `spec.md > Look and Feel`, `spec.md > Where It Runs and How Someone Tries It`, `spec.md > Important Failure Modes`
-  Build: Add debounced saved-diff detection, duplicate-session protection, final retro styling and avatar asset, loading/skip/error states, README setup/demo instructions, and a short reproducible demo script.
-  Verify (mechanical): Run the full typecheck/build checks; in a Git demo workspace save a meaningful change and confirm one quiz opens; save minor edits repeatedly and confirm no quiz storm; test no-diff and service-unavailable states; follow the README demo steps from a clean terminal.
-  Learner check: Run the complete demo from the visible terminal through the Extension Development Host, try the automatic and manual triggers, and report what should be refined before final review.
+  Build: Add debounced saved-diff detection, duplicate-session protection, an `@explainit` Chat Participant backed by a bounded prompt-observation endpoint, final retro styling and avatar asset, loading/skip/error states, README setup/demo instructions, and a short reproducible demo script. Keep the public API boundary explicit: Explainit receives prompts sent to `@explainit`; it does not scrape another extension's private transcript.
+  Verify (mechanical): Run the full typecheck/build checks; in a Git demo workspace save a meaningful change and confirm one quiz opens; send a prompt to `@explainit` and confirm a host response appears; save minor edits repeatedly and confirm no quiz storm; test no-diff and service-unavailable states; follow the README demo steps from a clean terminal.
+  Learner check: Run the complete demo from the visible terminal through the Extension Development Host, try the automatic saved-change trigger and an `@explainit` prompt beside the coding agent, and report what should be refined before final review.
   Commit: `Polish saved-change demo flow`
 
 ## Hands-on Checkpoints
