@@ -29,7 +29,7 @@ Build mode: learn
   Learner check: Start the visible service, make one small change in a demo file, run `Explain This Change`, and report what the logs and panel show about the context Explainit inspected.
   Commit: `Add bounded MCP workspace context`
 
-- [ ] **3. The agent generates a real short quiz from the focused change**
+- [x] **3. The agent generates a real short quiz from the focused change**
   Becomes usable: With a local API key configured, Explainit uses the agent skill and MCP context to generate up to three structured questions with mixed answer formats, while the fixture fallback remains available when the model is unavailable.
   Why now: This connects the proven UI and MCP boundary to the AI kernel and tests the most important external dependency before adding the full scoring flow.
   PRD ref: `prd.md > Agent-governed host`, `prd.md > States and Boundaries`, `prd.md > Graceful skip`
