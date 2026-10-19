@@ -49,7 +49,7 @@ Build mode: learn
   Learner check: Play the complete quiz against a focused change, inspect the final score and Trust Receipt, and report whether the receipt makes the agent’s behavior understandable without opening source code.
   Commit: `Complete quiz scoring and trust receipt`
 
-- [ ] **5. Explainit follows a vibe-coding session without becoming noisy**
+- [x] **5. Explainit follows a vibe-coding session without becoming noisy**
   Becomes usable: A debounced save of a non-empty active-file Git diff can start the quiz, while an `@explainit` chat participant can respond to an intentional prompt with a short host comment or a quiz when the prompt describes a meaningful change. Repeated minor edits do not create an uncontrolled stream, and the local demo path is ready to record.
   Why now: Adds the automatic spectacle only after the manual path, MCP context, live agent, and result experience are reliable; it keeps trigger noise from obscuring earlier failures.
   PRD ref: `prd.md > Change-triggered quiz`, `prd.md > Repeated trigger`, `prd.md > Look and Feel`, `prd.md > What We're Building`
@@ -62,7 +62,7 @@ Build mode: learn
 ## Hands-on Checkpoints
 
 - [x] Early usable behavior explored — after slice 2, inspect the retro quiz shell plus the visible MCP context logs and give feedback before the live model integration.
-- [ ] Final kick-the-tires exploration and feedback completed — after slice 5, run the complete manual and automatic flows, try no-diff/service-unavailable cases, and report refinements.
+- [x] Final kick-the-tires exploration and feedback completed — after slice 5, run the complete manual and automatic flows, try no-diff/service-unavailable cases, and report refinements.
 
 ## Final Review
 
@@ -82,6 +82,8 @@ Activity mode: [to complete]
 
 ## Revisions
 
+- The hands-on Copilot test showed that a save event can arrive while the chat view has focus, so the watcher now quizzes the document from the save event instead of requiring it to be the active editor. The provider adapter also separates plain-text prompt commentary from JSON quiz generation after Groq rejected commentary requests sent in JSON mode.
+- The first automatic-trigger check showed that the model was receiving only the full uncommitted Git diff, so an older change could overshadow the newest deletion or insertion. The extension now records a bounded latest-edit signal from VS Code document events and the agent is instructed to prioritize it while retaining the Git diff as supporting context.
 - Added root VS Code launch and task configuration after the first hands-on attempt showed that pressing `F5` did not launch the nested `extension/` package as an Extension Development Host. The extension manifest and compiled activation were correct; the missing launch target prevented the command from appearing. The launch target was then simplified to avoid reopening the normal workspace window.
 - Added a two-second service-request timeout after the hands-on check showed that an unavailable or stalled local service could make the command appear unresponsive. The extension now falls back to the fixture quiz instead of waiting indefinitely.
 - Open the fixture quiz immediately before the asynchronous context request after a second hands-on check showed that even a fallback timeout gave no immediate visual response. MCP context now enhances the already-visible panel when it returns.

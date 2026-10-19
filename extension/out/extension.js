@@ -75,7 +75,7 @@ function requestContext(workspaceRoot, filePath, language) {
         request.end(body);
     });
 }
-function requestAgentQuiz(workspaceRoot, filePath, language) {
+function requestAgentQuiz(workspaceRoot, filePath, language, recentEdit) {
     return (async () => {
         const controller = new AbortController();
         const deadline = setTimeout(() => controller.abort(), 60000);
@@ -83,7 +83,7 @@ function requestAgentQuiz(workspaceRoot, filePath, language) {
             const response = await fetch("http://127.0.0.1:4242/quiz", {
                 method: "POST",
                 headers: { "content-type": "application/json" },
-                body: JSON.stringify({ workspaceRoot, filePath, language }),
+                body: JSON.stringify({ workspaceRoot, filePath, language, recentEdit }),
                 signal: controller.signal,
             });
             const responseBody = await response.text();
@@ -117,19 +117,95 @@ function requestAgentQuiz(workspaceRoot, filePath, language) {
         }
     })();
 }
+function requestHostCommentary(workspaceRoot, filePath, language, prompt, recentEdit) {
+    return (async () => {
+        const response = await fetch("http://127.0.0.1:4242/observe", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ workspaceRoot, filePath, language, prompt, recentEdit }),
+        });
+        const responseBody = await response.text();
+        if (!response.ok) {
+            let detail = responseBody || "no error details";
+            try {
+                const payload = JSON.parse(responseBody);
+                if (payload.message)
+                    detail = payload.message;
+            }
+            catch {
+                // Keep the raw body when the service did not return JSON.
+            }
+            throw new Error(`Explainit observation service returned ${response.status}: ${detail}`);
+        }
+        const payload = JSON.parse(responseBody);
+        if (!payload.message)
+            throw new Error("Explainit observation returned no host message.");
+        return payload.message;
+    })();
+}
+function offsetAt(text, line, character) {
+    let offset = 0;
+    for (let currentLine = 0; currentLine < line; currentLine += 1) {
+        const newline = text.indexOf("\n", offset);
+        if (newline < 0)
+            return text.length;
+        offset = newline + 1;
+    }
+    return Math.min(offset + character, text.length);
+}
+function describeRecentEdit(document, previousText, change) {
+    const start = offsetAt(previousText, change.range.start.line, change.range.start.character);
+    const removedText = previousText.slice(start, start + change.rangeLength).replace(/\s+/g, " ").trim();
+    const insertedText = change.text.replace(/\s+/g, " ").trim();
+    const location = `lines ${change.range.start.line + 1}-${change.range.end.line + 1}`;
+    if (!insertedText && removedText)
+        return `Latest edit: deleted ${change.rangeLength} character(s) on ${location}. Deleted snippet: ${removedText.slice(0, 500)}`;
+    if (insertedText && removedText)
+        return `Latest edit: replaced text on ${location}. Removed: ${removedText.slice(0, 250)}. Added: ${insertedText.slice(0, 250)}`;
+    if (insertedText)
+        return `Latest edit: added text on ${location}: ${insertedText.slice(0, 500)}`;
+    return `Latest edit: changed ${change.rangeLength} character(s) on ${location}.`;
+}
+function displayRecentEdit(recentEdit) {
+    return recentEdit?.replace(/\s*(?:Deleted snippet|Removed|Added):.*$/i, "").trim();
+}
 function activate(context) {
     const panel = new quiz_panel_1.QuizPanel(context.extensionUri);
-    const explainThisChange = async () => {
+    let autoInFlight = false;
+    let autoCooldownUntil = 0;
+    let saveTimer;
+    const documentSnapshots = new Map();
+    const recentEdits = new Map();
+    const activeDocument = vscode.window.activeTextEditor?.document;
+    if (activeDocument)
+        documentSnapshots.set(activeDocument.uri.toString(), activeDocument.getText());
+    const documentOpened = vscode.workspace.onDidOpenTextDocument((document) => {
+        documentSnapshots.set(document.uri.toString(), document.getText());
+    });
+    const documentChanged = vscode.workspace.onDidChangeTextDocument((event) => {
+        const key = event.document.uri.toString();
+        const previousText = documentSnapshots.get(key);
+        if (previousText !== undefined && event.contentChanges.length > 0) {
+            recentEdits.set(key, describeRecentEdit(event.document, previousText, event.contentChanges[0]));
+        }
+        documentSnapshots.set(key, event.document.getText());
+    });
+    const explainThisChange = async (automatic = false, recentEdit, savedDocument) => {
+        if (automatic) {
+            if (autoInFlight || Date.now() < autoCooldownUntil)
+                return;
+            autoInFlight = true;
+        }
         // Open immediately so a slow or unavailable local service never makes the command feel inert.
-        panel.show({ ...fixtureQuiz, source: "loading", intro: "The host is checking the MCP context before the buzzer sounds..." });
-        const editor = vscode.window.activeTextEditor;
-        const workspaceRoot = editor
-            ? vscode.workspace.getWorkspaceFolder(editor.document.uri)?.uri.fsPath
+        panel.show({ ...fixtureQuiz, source: "loading", changeLabel: "Preparing focused change", intro: "The host is checking the MCP context before the buzzer sounds..." });
+        const document = savedDocument ?? vscode.window.activeTextEditor?.document;
+        const workspaceRoot = document
+            ? vscode.workspace.getWorkspaceFolder(document.uri)?.uri.fsPath
             : undefined;
-        if (editor && workspaceRoot) {
+        if (document && workspaceRoot) {
             try {
-                const result = await requestAgentQuiz(workspaceRoot, editor.document.uri.fsPath, editor.document.languageId);
-                console.log(`[explainit] live agent quiz received from ${editor.document.uri.fsPath}`);
+                const result = await requestAgentQuiz(workspaceRoot, document.uri.fsPath, document.languageId, recentEdit);
+                console.log(`[explainit] live agent quiz received from ${document.uri.fsPath}`);
                 const question = result.quiz.questions[0];
                 const questions = result.quiz.questions.map((item) => ({
                     question: item.question,
@@ -143,13 +219,13 @@ function activate(context) {
                     ...fixtureQuiz,
                     title: result.quiz.title,
                     intro: result.quiz.intro,
-                    changeLabel: result.filePath,
+                    changeLabel: result.filePath.startsWith(`${workspaceRoot}/`) ? result.filePath.slice(workspaceRoot.length + 1) : result.filePath.split("/").pop() ?? result.filePath,
                     question: question.question,
                     answerType: question.answerType,
                     options: question.options.map((label, index) => ({ id: String(index), label: `${String.fromCharCode(65 + index)}. ${label}` })),
                     correctOptionId: question.answerType === "single_choice" ? String(question.options.indexOf(question.correctAnswer)) : "",
                     feedback: question.explanation,
-                    contextSummary: `${result.diff.split("\n")[0]} …`,
+                    contextSummary: displayRecentEdit(result.recentEdit),
                     toolsUsed: result.toolsUsed,
                     source: "agent",
                     questions,
@@ -163,10 +239,41 @@ function activate(context) {
                 void vscode.window.showWarningMessage(`Explainit used fixture mode: ${reason}`);
             }
         }
+        if (automatic) {
+            autoInFlight = false;
+            autoCooldownUntil = Date.now() + 10_000;
+        }
     };
     const command = vscode.commands.registerCommand("explainit.explainThisChange", explainThisChange);
     const liveCommand = vscode.commands.registerCommand("explainit.explainThisChangeLive", explainThisChange);
-    context.subscriptions.push(command, liveCommand);
+    const saveWatcher = vscode.workspace.onDidSaveTextDocument((document) => {
+        if (!vscode.workspace.getWorkspaceFolder(document.uri))
+            return;
+        console.log(`[explainit] saved file; scheduling observation for ${document.uri.fsPath}`);
+        if (saveTimer)
+            clearTimeout(saveTimer);
+        saveTimer = setTimeout(() => void explainThisChange(true, recentEdits.get(document.uri.toString()), document), 1200);
+    });
+    const participant = vscode.chat.createChatParticipant("explainit.host", async (request, _chatContext, response) => {
+        const editor = vscode.window.activeTextEditor;
+        const workspaceRoot = editor
+            ? vscode.workspace.getWorkspaceFolder(editor.document.uri)?.uri.fsPath
+            : undefined;
+        if (!editor || !workspaceRoot) {
+            response.markdown("🎙️ The host is ready, but I need an open workspace file to observe. Open the changed file beside this chat and try again.");
+            return;
+        }
+        response.progress("The host is checking the focused change...");
+        try {
+            const message = await requestHostCommentary(workspaceRoot, editor.document.uri.fsPath, editor.document.languageId, request.prompt, recentEdits.get(editor.document.uri.toString()));
+            response.markdown(message);
+        }
+        catch (error) {
+            response.markdown(`🎙️ **Host note:** I heard you, but I need a saved focused change before I can inspect the code. Save the file, then ask me again.\n\n_${String(error)}_`);
+        }
+    });
+    participant.iconPath = vscode.Uri.joinPath(context.extensionUri, "media", "avatar.svg");
+    context.subscriptions.push(command, liveCommand, saveWatcher, documentOpened, documentChanged, participant);
 }
 function deactivate() { }
 //# sourceMappingURL=extension.js.map

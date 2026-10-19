@@ -74,6 +74,7 @@ async function contextFromRequest(input) {
         nearbyContext: nearby.context,
         fingerprint: focused.fingerprint,
         toolsUsed: ["get_focused_change", "get_nearby_context"],
+        recentEdit: input.recentEdit,
     };
 }
 const server = http.createServer(async (request, response) => {
@@ -105,6 +106,23 @@ const server = http.createServer(async (request, response) => {
         catch (error) {
             const message = String(error);
             console.error(`[agent] fallback: ${message}`);
+            send(response, 503, { ok: false, message });
+        }
+        return;
+    }
+    if (request.method === "POST" && request.url === "/observe") {
+        try {
+            const input = (await readJson(request));
+            if (!input.prompt?.trim())
+                throw new Error("Explainit needs the prompt text to observe it.");
+            const context = await contextFromRequest(input);
+            const message = await (0, agent_1.generatePromptCommentary)(context, input.prompt.trim());
+            console.log(`[agent] host observed prompt for ${context.filePath}`);
+            send(response, 200, { ok: true, message, context });
+        }
+        catch (error) {
+            const message = String(error);
+            console.error(`[agent] observation fallback: ${message}`);
             send(response, 503, { ok: false, message });
         }
         return;

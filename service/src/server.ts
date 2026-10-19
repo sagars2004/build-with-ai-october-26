@@ -1,7 +1,7 @@
 import * as http from "node:http";
 import { ContextClient } from "./mcp/client";
 import { ContextRequest, FocusedContext } from "./types";
-import { generateAgentQuiz } from "./agent";
+import { generateAgentQuiz, generatePromptCommentary } from "./agent";
 import { providerConfig } from "./config";
 
 const port = Number(process.env.EXPLAINIT_PORT ?? 4242);
@@ -46,6 +46,7 @@ async function contextFromRequest(input: ContextRequest): Promise<FocusedContext
     nearbyContext: nearby.context,
     fingerprint: focused.fingerprint,
     toolsUsed: ["get_focused_change", "get_nearby_context"],
+    recentEdit: input.recentEdit,
   };
 }
 
@@ -78,6 +79,22 @@ const server = http.createServer(async (request, response) => {
     } catch (error) {
       const message = String(error);
       console.error(`[agent] fallback: ${message}`);
+      send(response, 503, { ok: false, message });
+    }
+    return;
+  }
+
+  if (request.method === "POST" && request.url === "/observe") {
+    try {
+      const input = (await readJson(request)) as ContextRequest & { prompt?: string };
+      if (!input.prompt?.trim()) throw new Error("Explainit needs the prompt text to observe it.");
+      const context = await contextFromRequest(input);
+      const message = await generatePromptCommentary(context, input.prompt.trim());
+      console.log(`[agent] host observed prompt for ${context.filePath}`);
+      send(response, 200, { ok: true, message, context });
+    } catch (error) {
+      const message = String(error);
+      console.error(`[agent] observation fallback: ${message}`);
       send(response, 503, { ok: false, message });
     }
     return;

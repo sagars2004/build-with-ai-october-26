@@ -61,7 +61,7 @@ export class QuizPanel {
           type: "answerFeedback",
           isCorrect,
           feedback: isUncertain
-            ? "The honesty buzzer is loud today. No points for this round, but now you know exactly which part of the code deserves a closer look."
+            ? `The honesty buzzer is loud today. No points for this round, but here is the answer: ${current.feedback}`
             : isCorrect
             ? current.feedback
             : `Not quite. ${current.feedback}`,
@@ -122,16 +122,17 @@ export class QuizPanel {
           vscode.Uri.joinPath(this.extensionUri, "media", "avatar.svg"),
         )
       : "";
-    const current = this.currentQuestion()!;
+    const isLoading = quiz.source === "loading";
+    const current = isLoading ? undefined : this.currentQuestion()!;
     const questionNumber = this.questionIndex + 1;
     const totalQuestions = quiz.questions?.length ?? quiz.totalQuestions;
-    const options = current.options
+    const options = current?.options
       .map(
         (option) =>
           `<button class="option" data-option-id="${escapeHtml(option.id)}">${escapeHtml(option.label)}</button>`,
       )
       .join("");
-    const answerControl = current.answerType === "free_form"
+    const answerControl = current?.answerType === "free_form"
       ? `<textarea id="freeFormAnswer" placeholder="Explain it in your own words..."></textarea><button class="lock" id="submitFreeForm">LOCK IT IN</button>`
       : options;
 
@@ -183,6 +184,9 @@ export class QuizPanel {
       .feedback strong { color: var(--accent); }
       .next-action { display: flex; justify-content: center; min-height: 0; }
       .next-action .lock { margin-top: 14px; }
+      .loading-state { display: grid; justify-items: center; gap: 16px; padding: 56px 18px; color: var(--muted); text-align: center; }
+      .spinner { width: 34px; height: 34px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
+      @keyframes spin { to { transform: rotate(360deg); } }
       .receipt { display: none; margin-top: 18px; color: var(--muted); font-size: 12px; line-height: 1.6; }
       .receipt strong { color: var(--ink); }
     </style>
@@ -194,12 +198,14 @@ export class QuizPanel {
         <div><div class="eyebrow">Explainit // ${quiz.source === "agent" ? "agent mode" : quiz.source === "loading" ? "agent connecting..." : "fixture mode"}</div><h1>${escapeHtml(quiz.title)}</h1></div>
       </header>
       <section class="intro">${escapeHtml(quiz.intro)}</section>
-      <div class="change">FOCUSED CHANGE // ${escapeHtml(quiz.changeLabel)}<br />${escapeHtml(quiz.contextSummary ?? "")}</div>
-      <div class="progress"><span>QUESTION ${questionNumber} OF ${totalQuestions}</span><span>HOST READY</span></div>
-      <section class="message"><strong>${escapeHtml(current.question)}</strong><div class="options">${answerControl}</div></section>
+      <div class="change">${isLoading ? "FOCUSED CHANGE // " : "FOCUSED CHANGE // "}${escapeHtml(quiz.changeLabel)}${quiz.contextSummary && !isLoading ? `<br />${escapeHtml(quiz.contextSummary)}` : ""}</div>
+      ${isLoading
+        ? `<section class="loading-state"><div class="spinner" aria-label="Loading"></div><strong>The host is checking the latest edit...</strong><span>Reading the bounded workspace context before the questions appear.</span></section>`
+        : `<div class="progress"><span>QUESTION ${questionNumber} OF ${totalQuestions}</span><span>HOST READY</span></div>
+      <section class="message"><strong>${escapeHtml(current!.question)}</strong><div class="options">${answerControl}</div></section>
       <section id="feedback" class="message feedback"></section>
       <div id="nextAction" class="next-action"></div>
-      <section id="receipt" class="receipt"><strong>TRUST RECEIPT // ${quiz.source === "agent" ? "LIVE EVIDENCE" : "FIXTURE PREVIEW"}</strong><br />${escapeHtml(quiz.contextSummary ?? "The live agent will later show which workspace context it inspected and why it chose each question.")}<br />${quiz.toolsUsed ? escapeHtml(`MCP TOOLS // ${quiz.toolsUsed.join(", ")}`) : ""}</section>
+      <section id="receipt" class="receipt"><strong>TRUST RECEIPT // ${quiz.source === "agent" ? "LIVE EVIDENCE" : "FIXTURE PREVIEW"}</strong><br />${escapeHtml(quiz.contextSummary ?? "The live agent will later show which workspace context it inspected and why it chose each question.")}<br />${quiz.toolsUsed ? escapeHtml(`MCP TOOLS // ${quiz.toolsUsed.join(", ")}`) : ""}</section>`}
     </main>
     <script>
       const vscode = acquireVsCodeApi();

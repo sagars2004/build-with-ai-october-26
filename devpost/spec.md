@@ -88,7 +88,7 @@ Registers the `Explain This Change` command, starts the quiz flow, and connects 
 
 Implements `prd.md > Change-triggered quiz` and `prd.md > States and Boundaries`.
 
-Listens for active-document saves with debounce protection. It checks whether the active file has a non-empty Git diff. The manual command can bypass the automatic detector’s threshold, but it still sends only focused-file metadata; the MCP server obtains the bounded diff and nearby context.
+Listens for active-document saves with debounce protection. It captures a bounded description of the newest text edit, including inserted or deleted text and its line range, and sends that signal alongside the focused Git diff. The newest edit is the quiz subject; the Git diff and nearby context provide supporting history. The manual command can bypass the automatic detector’s threshold, but it still sends only focused-file metadata; the MCP server obtains the bounded diff and nearby context.
 
 ### Quiz Webview
 

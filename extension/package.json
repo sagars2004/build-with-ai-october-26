@@ -8,7 +8,7 @@
     "vscode": "^1.90.0"
   },
   "categories": ["Other"],
-  "activationEvents": ["onCommand:explainit.explainThisChange", "onCommand:explainit.explainThisChangeLive"],
+  "activationEvents": ["onStartupFinished", "onCommand:explainit.explainThisChange", "onCommand:explainit.explainThisChangeLive", "onChatParticipant:explainit.host"],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
@@ -19,6 +19,13 @@
       {
         "command": "explainit.explainThisChangeLive",
         "title": "Explain This Change — MCP Agent"
+      }
+    ],
+    "chatParticipants": [
+      {
+        "id": "explainit.host",
+        "name": "explainit",
+        "description": "Let the Explainit game-show host observe your coding prompt and call out what to watch."
       }
     ]
   },
