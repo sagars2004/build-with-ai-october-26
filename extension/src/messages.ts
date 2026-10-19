@@ -3,6 +3,15 @@ export type AnswerOption = {
   label: string;
 };
 
+export type QuizQuestion = {
+  question: string;
+  answerType: "single_choice" | "free_form";
+  options: AnswerOption[];
+  correctOptionId: string;
+  correctAnswer: string;
+  feedback: string;
+};
+
 export type FixtureQuiz = {
   title: string;
   intro: string;
@@ -17,4 +26,5 @@ export type FixtureQuiz = {
   contextSummary?: string;
   toolsUsed?: string[];
   source?: "fixture" | "agent" | "loading";
+  questions?: QuizQuestion[];
 };

@@ -98,6 +98,14 @@ export function activate(context: vscode.ExtensionContext): void {
           const result = await requestAgentQuiz(workspaceRoot, editor.document.uri.fsPath, editor.document.languageId);
           console.log(`[explainit] live agent quiz received from ${editor.document.uri.fsPath}`);
           const question = result.quiz.questions[0];
+          const questions = result.quiz.questions.map((item) => ({
+            question: item.question,
+            answerType: item.answerType,
+            options: item.options.map((label, index) => ({ id: String(index), label: `${String.fromCharCode(65 + index)}. ${label}` })),
+            correctOptionId: item.answerType === "single_choice" ? String(item.options.indexOf(item.correctAnswer)) : "",
+            correctAnswer: item.correctAnswer,
+            feedback: item.explanation,
+          }));
           panel.show({
             ...fixtureQuiz,
             title: result.quiz.title,
@@ -111,6 +119,7 @@ export function activate(context: vscode.ExtensionContext): void {
             contextSummary: `${result.diff.split("\n")[0]} …`,
             toolsUsed: result.toolsUsed,
             source: "agent",
+            questions,
           });
           return;
         } catch (error) {

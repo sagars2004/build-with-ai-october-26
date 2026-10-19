@@ -39,7 +39,7 @@ Build mode: learn
   Learner check: Run one live quiz if API access is available, compare the questions with the code change, and report whether the agent tested something genuinely specific rather than producing a generic code explanation.
   Commit: `Generate agent-guided quizzes`
 
-- [ ] **4. The quiz grades answers and produces the Trust Receipt**
+- [x] **4. The quiz grades answers and produces the Trust Receipt**
   Becomes usable: The developer answers each question one at a time, receives brief correctness feedback, sees a final understanding score and review areas, and receives a concise Trust Receipt showing context inspected, question rationale, tested edge case, and next review step.
   Why now: Completes the learning loop and makes the MCP/agent behavior visible to a judge; this is the main end-to-end proof of the product kernel.
   PRD ref: `prd.md > Answer feedback and final score`, `prd.md > Trust Receipt`, `prd.md > States and Boundaries`, `prd.md > What We're Building`

@@ -35,13 +35,22 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.QuizPanel = void 0;
 const vscode = __importStar(require("vscode"));
+function escapeHtml(value) {
+    return value.replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character] ?? character);
+}
 class QuizPanel {
     extensionUri;
     panel;
+    activeQuiz;
+    questionIndex = 0;
+    score = 0;
     constructor(extensionUri) {
         this.extensionUri = extensionUri;
     }
     show(quiz) {
+        this.activeQuiz = quiz;
+        this.questionIndex = 0;
+        this.score = 0;
         if (this.panel && quiz.source === "agent") {
             const previousPanel = this.panel;
             this.panel = undefined;
@@ -57,26 +66,70 @@ class QuizPanel {
             this.panel = undefined;
         });
         this.panel.webview.onDidReceiveMessage((message) => {
-            if (message.type !== "submitAnswer" || !message.optionId)
+            if (message.type === "nextQuestion") {
+                this.questionIndex += 1;
+                if (this.activeQuiz)
+                    this.panel.webview.html = this.render(this.activeQuiz);
                 return;
-            const isCorrect = message.optionId === quiz.correctOptionId;
+            }
+            if (message.type !== "submitAnswer")
+                return;
+            const current = this.currentQuestion();
+            if (!current)
+                return;
+            const answer = message.answer ?? message.optionId ?? "";
+            const isCorrect = current.answerType === "single_choice"
+                ? answer === current.correctOptionId
+                : this.freeFormLooksCorrect(answer, current.correctAnswer);
+            if (isCorrect)
+                this.score += 1;
+            const total = this.activeQuiz?.questions?.length ?? 1;
+            const isFinal = this.questionIndex >= total - 1;
             void this.panel?.webview.postMessage({
                 type: "answerFeedback",
                 isCorrect,
                 feedback: isCorrect
-                    ? quiz.feedback
-                    : `Not quite. ${quiz.feedback}`,
+                    ? current.feedback
+                    : `Not quite. ${current.feedback}`,
+                isFinal,
+                score: this.score,
+                total,
             });
         });
         this.panel.webview.html = this.render(quiz);
+    }
+    currentQuestion() {
+        const quiz = this.activeQuiz;
+        if (!quiz)
+            return undefined;
+        return quiz.questions?.[this.questionIndex] ?? {
+            question: quiz.question,
+            answerType: quiz.answerType,
+            options: quiz.options,
+            correctOptionId: quiz.correctOptionId,
+            correctAnswer: quiz.correctOptionId,
+            feedback: quiz.feedback,
+        };
+    }
+    freeFormLooksCorrect(answer, expected) {
+        const expectedTerms = expected.toLowerCase().match(/[a-z0-9]{4,}/g) ?? [];
+        const answerText = answer.toLowerCase();
+        const usefulTerms = [...new Set(expectedTerms)].slice(0, 8);
+        return usefulTerms.length > 0 && usefulTerms.filter((term) => answerText.includes(term)).length >= Math.max(1, Math.ceil(usefulTerms.length * 0.35));
     }
     render(quiz) {
         const avatarUri = this.panel
             ? this.panel.webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "media", "avatar.svg"))
             : "";
-        const options = quiz.options
-            .map((option) => `<button class="option" data-option-id="${option.id}">${option.label}</button>`)
+        const current = this.currentQuestion();
+        const questionNumber = this.questionIndex + 1;
+        const totalQuestions = quiz.questions?.length ?? quiz.totalQuestions;
+        const options = current.options
+            .map((option) => `<button class="option" data-option-id="${escapeHtml(option.id)}">${escapeHtml(option.label)}</button>`)
             .join("");
+        const answerControl = current.answerType === "free_form"
+            ? `<textarea id="freeFormAnswer" placeholder="Explain it in your own words..."></textarea><button class="lock" id="submitFreeForm">LOCK IT IN</button>`
+            : options;
         return `<!doctype html>
 <html lang="en">
   <head>
@@ -117,6 +170,9 @@ class QuizPanel {
       button { color: var(--ink); font: inherit; cursor: pointer; }
       .option { text-align: left; padding: 14px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 9px; }
       .option:hover, .option:focus-visible { border-color: var(--accent); color: var(--accent); outline: none; }
+      textarea { width: 100%; min-height: 110px; resize: vertical; padding: 14px; color: var(--ink); background: var(--panel-2); border: 1px solid var(--border); border-radius: 9px; font: inherit; }
+      textarea:focus { border-color: var(--accent); outline: none; }
+      .lock { margin-top: 12px; padding: 11px 14px; background: var(--accent); color: #24182d; border: 0; border-radius: 8px; font-weight: 700; }
       .feedback { display: none; margin-top: 18px; border-left: 4px solid var(--green); }
       .feedback.wrong { border-left-color: var(--pink); }
       .feedback strong { color: var(--accent); }
@@ -128,14 +184,14 @@ class QuizPanel {
     <main class="shell">
       <header class="topline">
         <img class="avatar" src="${avatarUri}" alt="Explainit host avatar" />
-        <div><div class="eyebrow">Explainit // ${quiz.source === "agent" ? "agent mode" : quiz.source === "loading" ? "agent connecting..." : "fixture mode"}</div><h1>${quiz.title}</h1></div>
+        <div><div class="eyebrow">Explainit // ${quiz.source === "agent" ? "agent mode" : quiz.source === "loading" ? "agent connecting..." : "fixture mode"}</div><h1>${escapeHtml(quiz.title)}</h1></div>
       </header>
-      <section class="intro">${quiz.intro}</section>
-      <div class="change">FOCUSED CHANGE // ${quiz.changeLabel}<br />${quiz.contextSummary ?? ""}</div>
-      <div class="progress"><span>QUESTION ${quiz.questionNumber} OF ${quiz.totalQuestions}</span><span>HOST READY</span></div>
-      <section class="message"><strong>${quiz.question}</strong><div class="options">${options}</div></section>
+      <section class="intro">${escapeHtml(quiz.intro)}</section>
+      <div class="change">FOCUSED CHANGE // ${escapeHtml(quiz.changeLabel)}<br />${escapeHtml(quiz.contextSummary ?? "")}</div>
+      <div class="progress"><span>QUESTION ${questionNumber} OF ${totalQuestions}</span><span>HOST READY</span></div>
+      <section class="message"><strong>${escapeHtml(current.question)}</strong><div class="options">${answerControl}</div></section>
       <section id="feedback" class="message feedback"></section>
-      <section id="receipt" class="receipt"><strong>TRUST RECEIPT // FIXTURE PREVIEW</strong><br />${quiz.contextSummary ?? "The live agent will later show which workspace context it inspected and why it chose each question."}<br />${quiz.toolsUsed ? `MCP TOOLS // ${quiz.toolsUsed.join(", ")}` : ""}</section>
+      <section id="receipt" class="receipt"><strong>TRUST RECEIPT // ${quiz.source === "agent" ? "LIVE EVIDENCE" : "FIXTURE PREVIEW"}</strong><br />${escapeHtml(quiz.contextSummary ?? "The live agent will later show which workspace context it inspected and why it chose each question.")}<br />${quiz.toolsUsed ? escapeHtml(`MCP TOOLS // ${quiz.toolsUsed.join(", ")}`) : ""}</section>
     </main>
     <script>
       const vscode = acquireVsCodeApi();
@@ -145,13 +201,30 @@ class QuizPanel {
           vscode.postMessage({ type: 'submitAnswer', optionId: button.dataset.optionId });
         });
       });
+      document.getElementById('submitFreeForm')?.addEventListener('click', () => {
+        const input = document.getElementById('freeFormAnswer');
+        if (!input || !input.value.trim()) return;
+        input.disabled = true;
+        document.getElementById('submitFreeForm').disabled = true;
+        vscode.postMessage({ type: 'submitAnswer', answer: input.value });
+      });
       window.addEventListener('message', (event) => {
         if (event.data.type !== 'answerFeedback') return;
+        const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character] || character));
         const feedback = document.getElementById('feedback');
         feedback.classList.toggle('wrong', !event.data.isCorrect);
-        feedback.innerHTML = '<strong>' + (event.data.isCorrect ? 'CORRECT // NICE READ' : 'NOT QUITE // KEEP YOUR EYES OPEN') + '</strong><br />' + event.data.feedback;
+        feedback.innerHTML = '<strong>' + (event.data.isCorrect ? 'CORRECT // NICE READ' : 'NOT QUITE // KEEP YOUR EYES OPEN') + '</strong><br />' + escapeHtml(event.data.feedback);
         feedback.style.display = 'block';
-        document.getElementById('receipt').style.display = 'block';
+        if (event.data.isFinal) {
+          document.getElementById('receipt').innerHTML += '<br /><strong>FINAL SCORE // ' + event.data.score + ' / ' + event.data.total + '</strong>';
+          document.getElementById('receipt').style.display = 'block';
+        } else {
+          const next = document.createElement('button');
+          next.className = 'lock';
+          next.textContent = 'NEXT QUESTION';
+          next.addEventListener('click', () => vscode.postMessage({ type: 'nextQuestion' }));
+          feedback.appendChild(next);
+        }
       });
     </script>
   </body>
